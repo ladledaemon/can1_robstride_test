@@ -1,0 +1,3 @@
+[submodule "CANLib_Robstride"]
+	path = CANLib_Robstride
+	url = https://gitlab.com/kikaiken/canlib_robstride.git
