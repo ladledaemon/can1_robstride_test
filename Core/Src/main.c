@@ -67,6 +67,7 @@ ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecr
 ETH_TxPacketConfig TxConfig;
 
 CAN_HandleTypeDef hcan1;
+CAN_HandleTypeDef hcan3;
 
 ETH_HandleTypeDef heth;
 
@@ -103,6 +104,7 @@ static void MX_USART3_UART_Init(void);
 static void MX_ETH_Init(void);
 static void MX_USB_OTG_FS_PCD_Init(void);
 static void MX_CAN1_Init(void);
+static void MX_CAN3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -190,11 +192,12 @@ int main(void)
   MX_ETH_Init();
   MX_USB_OTG_FS_PCD_Init();
   MX_CAN1_Init();
+  MX_CAN3_Init();
   /* USER CODE BEGIN 2 */
   num_of_robstride=1;
   robstride_dev_info_global=malloc(sizeof(Robstride_DeviceInfo)*num_of_robstride);
   robstride_fb=malloc(sizeof(Robstride_FeedbackData)* num_of_robstride);
-  Init_Robstride_CAN_System(&hcan1);
+  Init_Robstride_CAN_System(&hcan3);
   Robstride_Init(robstride_dev_info_global, num_of_robstride);
 
   if(num_of_robstride>=1){
@@ -202,10 +205,10 @@ int main(void)
 		  robstride_dev_info_global[i].device_id = i+1;
 		  robstride_dev_info_global[i].master_id = master_can_id;
 		  robstride_dev_info_global[i].device = Robstride_02;
-		  robstride_dev_info_global[i].phcan = &hcan1;
+		  robstride_dev_info_global[i].phcan = &hcan3;
 		  robstride_dev_info_global[i].ctrl_param.use_internal_offset = ROBSTRIDE_USE_OFFSET_POS_INITIAL;
-//		  robstride_dev_info_global[i].ctrl_param.offset_pos = M_PI/36.0;
-		  robstride_dev_info_global[i].ctrl_param.ctrl_type = ROBSTRIDE_CTRL_OPERATION;
+		  robstride_dev_info_global[i].ctrl_param.offset_pos = 2.0*M_PI;
+//		  robstride_dev_info_global[i].ctrl_param.ctrl_type = ROBSTRIDE_CTRL_OPERATION;
 		  robstride_dev_info_global[i].ctrl_param.ctrl_type = ROBSTRIDE_CTRL_VEL;
 		  robstride_dev_info_global[i].ctrl_param.velocity_limit = ROBSTRIDE_VELOCITY_LIMIT_DISABLE;
 		  robstride_dev_info_global[i].ctrl_param.current_limit = ROBSTRIDE_CURRENT_LIMIT_DISABLE;
@@ -214,7 +217,7 @@ int main(void)
 		  robstride_dev_info_global[i].ctrl_param.velocity_limit_size = 5.0*M_PI;
 		  robstride_dev_info_global[i].ctrl_param.current_limit_size = 0.5f;
 		  robstride_dev_info_global[i].ctrl_param.torque_limit_size = 10.0f;
-		  robstride_dev_info_global[i].ctrl_param.quant_per_rot = 2.0f;
+		  robstride_dev_info_global[i].ctrl_param.quant_per_rot = 1.0f;
 		  robstride_dev_info_global[i].ctrl_param.pid.kp_pos = 3.0f;
 		  robstride_dev_info_global[i].ctrl_param.pid.kp_vel = 6.0f;
 		  robstride_dev_info_global[i].ctrl_param.pid.ki_vel = 1.0f;
@@ -222,7 +225,7 @@ int main(void)
 		  robstride_dev_info_global[i].ctrl_param.pid.kp_cur = 0.05f;
 		  robstride_dev_info_global[i].ctrl_param.pid.ki_cur = 0.05f;
 		  robstride_dev_info_global[i].ctrl_param.pid.filter_cur = 0.06f;
-		  Robstride_Calibration(&robstride_dev_info_global[i], 1.0f, ROBSTRIDE_SWITCH_NO, GPIOB, GPIO_PIN_0, &hcan1);
+		  Robstride_Calibration(&robstride_dev_info_global[i], 1.0f, ROBSTRIDE_SWITCH_NO, GPIOB, GPIO_PIN_0, &hcan3);
 		  Robstride_PresetParameters(&robstride_dev_info_global[i]);
 //		  Robstride_SetAutoFeedback(&robstride_dev_info_global[i]);
 	 }
@@ -249,12 +252,14 @@ int main(void)
 //		  printf("cur:%f\n\r", robstride_fb[i].current);
 //		  printf("pos:%f\n\r", robstride_fb[i].position);
 //		  printf("torque:%f\n\r", robstride_fb[i].torque);
+//		  accel_count++;
+//		  Robstride_SetTarget(&robstride_dev_info_global[0], 5.0*M_PI*accel_count/(float)step);
 //		  Robstride_PID_Pos(&robstride_dev_info_global[i], 10.0*M_PI);
 //		  Robstride_RequestID(&robstride_dev_info_global[i]);
 //		  printf("MCU_ID:%d\n\r", robstride_fb[i].mcu_id);
 //		  Robstride_SetTarget_Operation(&robstride_dev_info_global[i], 0.3f, M_PI*3.0, -M_PI/8.0, 3.0f, 3.0f);
-		  Robstride_SetTarget(&robstride_dev_info_global[i], M_PI);
-		  HAL_Delay(1000);
+		  Robstride_SetTarget(&robstride_dev_info_global[i], 4.0*M_PI);
+//		  HAL_Delay(1000);
 	  }
 //	  robstride_fb[0] = Get_Robstride_FeedbackData(&robstride_dev_info_global[0]);
 //	  float now_arm=robstride_fb[0].position+initial_angle;
@@ -422,6 +427,43 @@ static void MX_CAN1_Init(void)
   /* USER CODE BEGIN CAN1_Init 2 */
 
   /* USER CODE END CAN1_Init 2 */
+
+}
+
+/**
+  * @brief CAN3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CAN3_Init(void)
+{
+
+  /* USER CODE BEGIN CAN3_Init 0 */
+
+  /* USER CODE END CAN3_Init 0 */
+
+  /* USER CODE BEGIN CAN3_Init 1 */
+
+  /* USER CODE END CAN3_Init 1 */
+  hcan3.Instance = CAN3;
+  hcan3.Init.Prescaler = 6;
+  hcan3.Init.Mode = CAN_MODE_NORMAL;
+  hcan3.Init.SyncJumpWidth = CAN_SJW_1TQ;
+  hcan3.Init.TimeSeg1 = CAN_BS1_6TQ;
+  hcan3.Init.TimeSeg2 = CAN_BS2_1TQ;
+  hcan3.Init.TimeTriggeredMode = DISABLE;
+  hcan3.Init.AutoBusOff = DISABLE;
+  hcan3.Init.AutoWakeUp = DISABLE;
+  hcan3.Init.AutoRetransmission = DISABLE;
+  hcan3.Init.ReceiveFifoLocked = DISABLE;
+  hcan3.Init.TransmitFifoPriority = ENABLE;
+  if (HAL_CAN_Init(&hcan3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CAN3_Init 2 */
+
+  /* USER CODE END CAN3_Init 2 */
 
 }
 
